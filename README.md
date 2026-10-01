@@ -1,58 +1,106 @@
 # PocketLedger
 
-A personal expense tracker built with Next.js, React, TypeScript, Supabase, and Tailwind. AI assists development; there are no AI product features. The specification and release requirements are in [PLAN.md](PLAN.md).
+## Project Description
 
-## Development Status
+PocketLedger is a personal expense tracker that helps you understand where your money goes and plan your monthly spending. Record purchases, organize them by category, set budgets, and view spending summaries from a responsive dashboard.
 
-This is a development release, not a production-ready financial service. The browser-local synthetic demo is runnable and tested. Cloud authentication and persistence are wired, but the migration and real Supabase flows have not been executed or integration-tested. Use synthetic data until those checks and the release gates below are complete.
+You can explore the app locally with sample data without creating an account or configuring a database. Supabase authentication and cloud storage are also implemented, but their database migrations and end-to-end account flows still need integration testing. This is a development release; use synthetic data only, not real personal or financial information.
 
-Implemented screens: Overview, Expenses, Budgets, Reports, Settings, Onboarding, Sign In, Sign Up, and password recovery. Demo workflows include expense creation/editing/deletion, search/date/category filters, sorting, pagination, CSV export, category archiving, monthly/category budgets, and profile settings.
+## Features
 
-## Run the Synthetic Demo
+- **Spending overview:** See total expenses, monthly budget, remaining budget, and recent transactions.
+- **Expense management:** Add, edit, and delete expenses.
+- **Search and filters:** Find expenses by description, date, or category, with sorting and pagination.
+- **Budget planning:** Set monthly limits and allocate budgets across categories.
+- **Spending reports:** Explore spending activity and category breakdowns through charts.
+- **CSV export:** Download expense records for use in a spreadsheet.
+- **Categories and settings:** Archive categories and update profile preferences.
+- **Account screens:** Sign up, sign in, complete onboarding, and recover a password when Supabase is configured.
+- **Local demo:** Try the app with browser-local sample records and reset them in Settings.
+- **Responsive interface:** Use the app on desktop and mobile screens.
 
-Use Node.js 22.12 or newer and npm:
+## Technology Used
+
+| Technology | Purpose |
+| --- | --- |
+| Next.js 16 and React 19 | Application framework and user interface |
+| TypeScript | Type-safe application code |
+| Tailwind CSS 4 | Styling and responsive layouts |
+| Supabase | Authentication and PostgreSQL cloud storage |
+| Recharts | Spending charts |
+| React Hook Form and Zod | Form handling and validation |
+| Radix UI and Lucide | Dialog components and icons |
+| Vitest and Playwright | Unit tests and desktop/mobile browser tests |
+
+## How to Install
+
+### Prerequisites
+
+- Node.js **22.12 or newer** and npm.
+- Git and access to the [private GitHub repository](https://github.com/AmarFederer/PocketLedger).
+- A modern browser that supports Web Locks, such as a current version of Chrome or Edge.
+
+Clone the repository and install its dependencies:
 
 ```bash
+git clone https://github.com/AmarFederer/PocketLedger.git
+cd PocketLedger
 npm ci
-POCKETLEDGER_DEMO=true npm run dev
 ```
 
-Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard). The demo is explicitly labelled, stores synthetic records only in browser local storage, and can be reset in Settings. It is ignored when `NODE_ENV=production`, does not create accounts, and cannot migrate to cloud mode. It requires a modern browser with Web Locks on localhost or HTTPS. Never enter real personal or financial data into the demo.
+If you already have the project locally, open a terminal in its folder and run `npm ci`.
 
-Without demo mode or database environment variables, the app shows an unavailable connection state. There is no silent fallback to sample data.
+## How to Run Locally
 
-## Configure Supabase
+### Option 1: Sample-data demo (recommended)
 
-1. Create a fresh Supabase project in an approved region. The migration initializes newly created accounts; existing accounts require a separately reviewed backfill.
-2. Apply [the initial migration](supabase/migrations/202610020001_initial_ledger.sql) through Supabase's SQL editor or your established migration runner. Validate it on a disposable project first.
-3. Create a local `.env.local` using the keys in [.env.example](.env.example). Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, with `POCKETLEDGER_DEMO=false`. Never put a service-role key into the app or a public environment variable.
-4. Enable email confirmations in Supabase Auth, configure SMTP, and allowlist the exact application `/auth/callback` URL plus `/auth/callback?next=reset-password` for recovery. Configure the application's origin as the Site URL, and use separate development and production projects.
-5. Start `npm run dev`, register a synthetic test account, verify its email, and complete onboarding. Test signup, recovery, logout, expired sessions, cross-user isolation, direct database-write denial, retries, stale revisions, and concurrent budget changes before using real data.
+1. Copy [.env.example](.env.example) to a new file named `.env.local` in the project root.
+2. Set this value in `.env.local`; leave the Supabase values empty:
 
-The migration defines profiles, categories, expenses, monthly budgets, allocations, and mutation receipts. Tables enable RLS and deny direct access to `anon` and `authenticated`; authenticated access is through verified-user RPCs. The mutation RPC locks the owner profile, checks idempotency before revision conflicts, and saves budget allocations atomically. Amounts use integer minor units and currency remains locked after the first financial write. Successful mutations are limited to 60 per user per minute; this is not a substitute for distributed abuse prevention.
+   ```dotenv
+   POCKETLEDGER_DEMO=true
+   ```
 
-## Validation
+3. Start the development server:
 
-```bash
-npm test
-npm run typecheck
-npm run lint
-npm run build
-npx playwright install chromium
-npm run test:e2e
-```
+   ```bash
+   npm run dev
+   ```
 
-Unit tests cover money precision, date boundaries, currency locking, category archiving, budget invariants, filters, CSV safety, and demo-mode isolation. Playwright exercises the synthetic demo on desktop and mobile, including expense CRUD/persistence/export, budget validation, navigation, chart rendering, and page overflow. Screenshots and failure traces are written to the ignored `test-results/` directory. Browser tests use port 3100; avoid running a different app on that port.
+4. Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard).
 
-CI runs these checks with Node.js 22. Database isolation and concurrency tests are still outstanding; application tests do not certify the SQL migration.
+The demo saves sample records in your browser's local storage. It does not create accounts or upload data to Supabase, and its records cannot be transferred to cloud mode. Demo mode is disabled in production. Stop the server with `Ctrl+C`.
 
-## Production Release Gates
+### Option 2: Supabase-backed development
 
-- Execute and review the migration and multi-account authorization/concurrency tests, including malformed direct RPC calls.
-- Implement account deletion with fresh credential verification, retries/reconciliation, and restore-time reapplication. Account deletion is deliberately disabled in this build.
-- Establish the privacy notice, legal/region review, log redaction and retention, backup retention, and restore procedure.
-- Schedule deletion of expired mutation receipts after seven days; the current migration rejects expired retries but does not schedule cleanup.
-- Add distributed authentication/export/abuse limits, monitoring, CSP and deployment security review, password-recovery session review, and alert ownership.
-- Replace full-ledger snapshots with server-side paginated/filterable reads before validating the planned data volume. Complete reports, load/performance targets, and WCAG 2.2 AA audits.
+1. Create a fresh development project in [Supabase](https://supabase.com/).
+2. Apply these migrations in order using the Supabase SQL editor or your migration runner:
+   - [Initial ledger schema](supabase/migrations/202610020001_initial_ledger.sql)
+   - [Default currency update](supabase/migrations/202610020002_default_rupees.sql)
+3. Copy [.env.example](.env.example) to `.env.local` and configure:
 
-Deploy to Vercel only after the relevant gates in [PLAN.md](PLAN.md) are met. Configure production Supabase environment variables, exact HTTPS callback allowlists, and database migrations independently. `npm run build` followed by `npm start` runs the production app locally; production never permits demo mode.
+   ```dotenv
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+   POCKETLEDGER_DEMO=false
+   ```
+
+   Never use a service-role key here or commit `.env.local`.
+
+4. Enable email confirmations and configure SMTP in Supabase Auth. Set the Site URL to `http://localhost:3000` and allow these redirect URLs:
+   - `http://localhost:3000/auth/callback`
+   - `http://localhost:3000/auth/callback?next=reset-password`
+5. Run `npm run dev`, then open [http://localhost:3000](http://localhost:3000). Register a synthetic test account, verify its email, and complete onboarding.
+
+Restart the development server after changing environment variables. Without demo mode or valid Supabase settings, the app displays an unavailable connection state.
+
+Cloud mode requires additional database, authentication, and data-isolation testing before real use. Account deletion is currently disabled. See [PLAN.md](PLAN.md) for the full specification and production release requirements.
+
+## Live Application URL
+
+A public live application URL has not been confirmed for this project.
+
+- **Local demo:** [http://localhost:3000/dashboard](http://localhost:3000/dashboard) (available while the development server is running).
+- **Source code:** [github.com/AmarFederer/PocketLedger](https://github.com/AmarFederer/PocketLedger) (private repository).
+
+The local URL is not a hosted deployment and cannot be accessed by other users over the internet.
