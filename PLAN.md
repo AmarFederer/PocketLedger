@@ -126,15 +126,15 @@ Use AI on one scoped slice at a time, review generated security and money logic,
 - Provisional recovery objectives: <=24 hours data loss and restoration within eight hours. Validate in a timed rehearsal or obtain approval for different objectives.
 
 ## Demo Mode Boundary
-- Optional local demo is non-production development/preview tooling, disabled by default and explicitly opted into. Persistently label it, use synthetic data only, provide reset, and isolate its storage from real accounts.
-- No demo-to-account migration. Missing Supabase configuration must fail closed, never silently activate a demo. Verify production cannot enable demo mode.
+- Optional local demo is disabled by default and explicitly opted into. A public hosted synthetic demonstration additionally requires `POCKETLEDGER_HOSTED_DEMO=true` and both Supabase settings to be absent. Persistently label it, use synthetic data only, provide reset, and isolate its storage from real accounts.
+- No demo-to-account migration. Missing Supabase configuration must fail closed, never silently activate a demo. Verify production rejects demo mode without both explicit flags and rejects hosted demo mode alongside any Supabase configuration.
 
 ## Verification Criteria
 - Exact decimal parsing, currency precision, invalid amounts, safe ranges, totals, and CSV safety.
 - Date-only behavior, month boundaries, pagination, filtering, and export of all matching records.
 - Anonymous access rejection, cross-account isolation, ownership foreign keys, currency locking, archived-category rules, and concurrent budget validation.
 - Idempotent retries, changed-payload conflicts, expired receipts, stale edits/deletes, future dates, no rollover, and permanent currency locking.
-- Callback/CSRF/expiry/rate-limit checks, fresh deletion verification, cache isolation, deletion retries, retention, restore-time deletion, and production demo exclusion.
+- Callback/CSRF/expiry/rate-limit checks, fresh deletion verification, cache isolation, deletion retries, retention, restore-time deletion, and hosted demo opt-in/isolation.
 - Browser flows for expenses, budgets, reports, settings, authentication, recovery, and account deletion.
 - Desktop/mobile screenshots, keyboard navigation, readable charts and tables, empty/loading/error states.
 - Measured load/performance and WCAG 2.2 AA acceptance against the stated targets.
@@ -142,13 +142,14 @@ Use AI on one scoped slice at a time, review generated security and money logic,
 
 ## Deployment Approach
 - Deploy Next.js to Vercel from reviewed changes with passing GitHub Actions CI.
+- The public synthetic demonstration may use the two explicit demo flags without Supabase; it is not a release of the cloud financial service.
 - Use separate development and production Supabase projects; previews must never access production financial data.
 - Apply versioned migrations before dependent releases; use backward-compatible migrations for rollback.
 - Configure project URL and publishable key; keep administrative keys server-only, never in public environment variables.
 - Configure exact authentication callback/reset URLs and production email delivery.
 - Use HTTPS, redact financial data and tokens from logs, and maintain dependencies.
 - Choose a Supabase backup/PITR plan or scheduled encrypted backups; verify retention and rehearse restoration outside production.
-- Configure cleanup/retention jobs, distributed limits, security headers, redacted monitoring, alert ownership, and production demo exclusion. Record approved costs, provider limits, data region, support contact, retention, and measured recovery objectives.
+- For cloud releases, disable both demo flags and configure cleanup/retention jobs, distributed limits, security headers, redacted monitoring, and alert ownership. Record approved costs, provider limits, data region, support contact, retention, and measured recovery objectives.
 - Roll back application releases through Vercel; document a separate database recovery procedure.
 
 ## Scope Boundaries

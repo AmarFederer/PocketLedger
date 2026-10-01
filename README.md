@@ -69,7 +69,7 @@ If you already have the project locally, open a terminal in its folder and run `
 
 4. Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard).
 
-The demo saves sample records in your browser's local storage. It does not create accounts or upload data to Supabase, and its records cannot be transferred to cloud mode. Demo mode is disabled in production. Stop the server with `Ctrl+C`.
+The demo saves sample records in your browser's local storage. It does not create accounts or upload data to Supabase, and its records cannot be transferred to cloud mode. Production demo mode requires an additional explicit opt-in described below. Stop the server with `Ctrl+C`.
 
 ### Option 2: Supabase-backed development
 
@@ -97,6 +97,22 @@ Restart the development server after changing environment variables. Without dem
 Cloud mode requires additional database, authentication, and data-isolation testing before real use. Account deletion is currently disabled. See [PLAN.md](PLAN.md) for the full specification and production release requirements.
 
 ## Live Application URL
+
+### Deploy a public synthetic demo on Vercel
+
+1. In [Vercel](https://vercel.com/new), import `AmarFederer/PocketLedger` from GitHub. Grant repository access if prompted.
+2. Keep the Next.js framework preset and the repository root as the Root Directory.
+3. Set these environment variables for Production and Preview:
+
+   ```dotenv
+   POCKETLEDGER_DEMO=true
+   POCKETLEDGER_HOSTED_DEMO=true
+   ```
+
+4. Leave both Supabase environment variables unset. Hosted demo mode is rejected if either Supabase value is present.
+5. Deploy the `main` branch and open the assigned HTTPS URL. Production deployments must be publicly accessible without Vercel authentication.
+
+This deployment is a labelled synthetic-data demonstration, not a production financial service. Each browser has its own local records; there are no shared accounts or cloud persistence. Never enter real personal or financial information. For cloud deployment, disable both demo flags and complete the release requirements in [PLAN.md](PLAN.md).
 
 A public live application URL has not been confirmed for this project.
 
