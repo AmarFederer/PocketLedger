@@ -55,8 +55,41 @@ const amountSchema = z.number().int().positive().max(MAX_AMOUNT);
 const categorySchema = z.object({ id: z.uuid(), name: z.string().trim().min(1).max(40), color: z.enum(palette as [string, ...string[]]), archived: z.boolean() });
 const expenseSchema = z.object({ id: z.uuid(), amount: amountSchema, date: z.string().refine(validDate, "Invalid date."), categoryId: z.uuid(), merchant: z.string().trim().min(1).max(100), note: z.string().trim().max(500), version: z.number().int().positive() });
 const budgetSchema = z.object({ month: z.string().regex(/^\d{4}-\d{2}$/).refine((value) => validDate(`${value}-01`)), limit: amountSchema, allocations: z.record(z.uuid(), amountSchema) });
-const profileSchema = z.object({ name: z.string().trim().min(1).max(60), currency: z.enum(currencies), timeZone: z.string().refine((value) => { try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; } }), currencyLocked: z.boolean(), onboarded: z.boolean() });
-export const ledgerSchema = z.object({ revision: z.number().int().nonnegative(), profile: profileSchema, categories: z.array(categorySchema), expenses: z.array(expenseSchema), budgets: z.array(budgetSchema) });
+const profileSchema = z.object({ name: z.string().trim().min(1).max(60), currency: z.enum(currencies), timeZone: z.string().refine((value) => { try { new Intl.DateTimeFormat("en", { timeZone: value }); return true; } catch { return false; } }, "Invalid time zone. Use an IANA name such as Asia/Kolkata."), currencyLocked: z.boolean(), onboarded: z.boolean() });
+export const ledgerSchema = z.object({ revision: z.number().int().nonnegative(), profile: profileSchema, categories: z.array(categorySchema), expenses: z.array(expenseSchema), budgets: z.array(budgetSchema) }).superRefine((ledger, context) => {
+  const categoryIds = new Set<string>();
+  const categoryNames = new Set<string>();
+  for (const [index, category] of ledger.categories.entries()) {
+    if (categoryIds.has(category.id) || categoryNames.has(category.name.toLowerCase())) {
+      context.addIssue({ code: "custom", path: ["categories", index], message: "Ledger contains duplicate categories." });
+    }
+    categoryIds.add(category.id);
+    categoryNames.add(category.name.toLowerCase());
+  }
+  const expenseIds = new Set<string>();
+  let total = BigInt(0);
+  for (const [index, expense] of ledger.expenses.entries()) {
+    if (expenseIds.has(expense.id)) context.addIssue({ code: "custom", path: ["expenses", index], message: "Ledger contains duplicate expenses." });
+    expenseIds.add(expense.id);
+    if (!categoryIds.has(expense.categoryId)) context.addIssue({ code: "custom", path: ["expenses", index, "categoryId"], message: "Expense refers to a missing category." });
+    total += BigInt(expense.amount);
+  }
+  if (total > BigInt(Number.MAX_SAFE_INTEGER)) context.addIssue({ code: "custom", path: ["expenses"], message: "Ledger total exceeds the supported range." });
+  const months = new Set<string>();
+  for (const [index, budget] of ledger.budgets.entries()) {
+    if (months.has(budget.month)) context.addIssue({ code: "custom", path: ["budgets", index], message: "Ledger contains duplicate monthly budgets." });
+    months.add(budget.month);
+    let allocated = BigInt(0);
+    for (const [categoryId, amount] of Object.entries(budget.allocations)) {
+      if (!categoryIds.has(categoryId)) context.addIssue({ code: "custom", path: ["budgets", index, "allocations", categoryId], message: "Budget refers to a missing category." });
+      allocated += BigInt(amount);
+    }
+    if (allocated > BigInt(budget.limit)) context.addIssue({ code: "custom", path: ["budgets", index, "allocations"], message: "Category allocations cannot exceed the overall budget." });
+  }
+  if ((ledger.expenses.length || ledger.budgets.length) && !ledger.profile.currencyLocked) {
+    context.addIssue({ code: "custom", path: ["profile", "currencyLocked"], message: "Currency must be locked when financial records exist." });
+  }
+});
 export type Ledger = z.infer<typeof ledgerSchema>;
 export type Expense = z.infer<typeof expenseSchema>;
 export type Category = z.infer<typeof categorySchema>;

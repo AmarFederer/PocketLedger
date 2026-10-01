@@ -43,6 +43,7 @@ function BudgetEditor({ ledger, month, pending, error, onSave, onClose }: { ledg
     event.preventDefault();
     const fields = new FormData(event.currentTarget);
     try {
+      setLocalError("");
       const allocations: Budget["allocations"] = {};
       for (const category of ledger.categories) {
         const raw = String(fields.get(category.id) ?? "").trim();

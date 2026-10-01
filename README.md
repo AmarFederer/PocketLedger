@@ -77,6 +77,7 @@ The demo saves sample records in your browser's local storage. It does not creat
 2. Apply these migrations in order using the Supabase SQL editor or your migration runner:
    - [Initial ledger schema](supabase/migrations/202610020001_initial_ledger.sql)
    - [Default currency update](supabase/migrations/202610020002_default_rupees.sql)
+   - [Mutation input validation](supabase/migrations/202610020003_validate_mutations.sql)
 3. Copy [.env.example](.env.example) to `.env.local` and configure:
 
    ```dotenv
@@ -95,6 +96,19 @@ The demo saves sample records in your browser's local storage. It does not creat
 Restart the development server after changing environment variables. Without demo mode or valid Supabase settings, the app displays an unavailable connection state.
 
 Cloud mode requires additional database, authentication, and data-isolation testing before real use. Account deletion is currently disabled. See [PLAN.md](PLAN.md) for the full specification and production release requirements.
+
+## Validation
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+Browser tests start an explicitly opted-in production demo on port 3100 using the preceding build. Keep that port free; an existing development server on port 3000 may remain running. Unit tests include mocked authentication/API failure handling, ledger-state synchronization, and migrations executed in an isolated embedded PostgreSQL database. These checks do not replace real Supabase signup, email recovery, session, concurrent-write, and two-account integration testing. Cloud release remains blocked until those checks pass.
 
 ## Live Application URL
 

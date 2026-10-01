@@ -2,18 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 import { applyChange, changeSchema, demoLedger, ledgerSchema, type Change, type Ledger } from "@/lib/ledger";
 
 const storageKey = "pocketledger.synthetic-demo.v1";
 
 function readDemo(fallback: Ledger) {
   const text = localStorage.getItem(storageKey);
-  const saved = text ? ledgerSchema.parse(JSON.parse(text)) : fallback;
-  if (saved.profile.currency === "USD") {
-    saved.profile.currency = "INR";
-    localStorage.setItem(storageKey, JSON.stringify(saved));
-  }
-  return saved;
+  return text ? ledgerSchema.parse(JSON.parse(text)) : fallback;
 }
 
 export function useLedger(initial: Ledger, mode: "demo" | "cloud") {
@@ -22,9 +18,11 @@ export function useLedger(initial: Ledger, mode: "demo" | "cloud") {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const inFlight = useRef(false);
+  const sessionExpired = useRef(false);
   const lastRequest = useRef<{ fingerprint: string; key: string; issuedAt: string } | null>(null);
 
   function expiredSession() {
+    sessionExpired.current = true;
     lastRequest.current = null;
     setLedger({ ...initial, expenses: [], budgets: [], categories: [], profile: { ...initial.profile, name: "", onboarded: false } });
     router.replace("/sign-in");
@@ -45,6 +43,14 @@ export function useLedger(initial: Ledger, mode: "demo" | "cloud") {
     window.addEventListener("storage", synchronize);
     return () => { active = false; window.removeEventListener("storage", synchronize); };
   }, [initial, mode]);
+
+  useEffect(() => {
+    if (mode !== "cloud" || pending || inFlight.current || sessionExpired.current) return;
+    async function synchronize() {
+      setLedger((current) => initial.revision >= current.revision ? initial : current);
+    }
+    void synchronize();
+  }, [initial, mode, pending]);
 
   async function mutate(change: Change) {
     if (inFlight.current) return false;
@@ -75,7 +81,7 @@ export function useLedger(initial: Ledger, mode: "demo" | "cloud") {
       setLedger(next);
       return true;
     } catch (issue) {
-      setError(issue instanceof Error ? issue.message : "Could not save changes.");
+      setError(issue instanceof z.ZodError ? issue.issues[0]?.message ?? "Invalid ledger data." : issue instanceof Error ? issue.message : "Could not save changes.");
       return false;
     } finally {
       inFlight.current = false;
