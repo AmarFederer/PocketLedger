@@ -98,6 +98,10 @@ Cloud mode requires additional database, authentication, and data-isolation test
 
 ## Live Application URL
 
+**Public application:** [https://pocketledger-topaz.vercel.app](https://pocketledger-topaz.vercel.app)
+
+Open the link to explore the dashboard, expenses, budgets, and reports without signing in. The hosted app uses synthetic demo data stored separately in each browser, not cloud accounts. Do not enter real personal or financial information.
+
 ### Deploy a public synthetic demo on Vercel
 
 1. In [Vercel](https://vercel.com/new), import `AmarFederer/PocketLedger` from GitHub. Grant repository access if prompted.
@@ -113,8 +117,6 @@ Cloud mode requires additional database, authentication, and data-isolation test
 5. Deploy the `main` branch and open the assigned HTTPS URL. Production deployments must be publicly accessible without Vercel authentication.
 
 This deployment is a labelled synthetic-data demonstration, not a production financial service. Each browser has its own local records; there are no shared accounts or cloud persistence. Never enter real personal or financial information. For cloud deployment, disable both demo flags and complete the release requirements in [PLAN.md](PLAN.md).
-
-A public live application URL has not been confirmed for this project.
 
 - **Local demo:** [http://localhost:3000/dashboard](http://localhost:3000/dashboard) (available while the development server is running).
 - **Source code:** [github.com/AmarFederer/PocketLedger](https://github.com/AmarFederer/PocketLedger) (private repository).
